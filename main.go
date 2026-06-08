@@ -1,19 +1,51 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 )
 
-func main() {
-	conn, err := net.Dial("unix", "/tmp/aicursor.sock")
+type Message struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+	X    int    `json:"x,omitempty"`
+	Y    int    `json:"y,omitempty"`
+}
+
+func sendMessage(conn net.Conn, msg Message) error {
+	data, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Println("Error connecting: ", err)
-		return
+		return err
+	}
+	_, err = conn.Write(append(data, '\n'))
+	return err
+}
+
+func main() {
+	conn, err := connectSocket()
+	if err != nil {
+		log.Fatal("Error connecting: ", err)
 	}
 	defer conn.Close()
 
-	msg := `{"type": "bubble", "text":"hello from Go!"}` + "\n"
-	conn.Write([]byte(msg))
+	// Send bubble message
+	err = sendMessage(conn, Message{Type: "bubble", Text: "Hello from Go!"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Send move message
+	sendMessage(conn, Message{Type: "move", X: 500, Y: 300})
+
 	fmt.Println("message sent!")
+}
+
+func connectSocket() (net.Conn, error) {
+	conn, err := net.Dial("unix", "/tmp/aicursor.sock")
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
 }
