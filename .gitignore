@@ -2,3 +2,8 @@ guide.md
 guide.pdf
 flow.md
 __pycache__
+tmp
+.air.toml
+klikk
+.venv
+.env

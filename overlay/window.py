@@ -26,6 +26,7 @@ class OverlayWindow(Gtk.ApplicationWindow):
         ]:
             Gtk4LayerShell.set_anchor(self, edge, True)
 
+        # Start with NO keyboard interaction (lets keys pass down to underlying apps)
         Gtk4LayerShell.set_keyboard_mode(self, Gtk4LayerShell.KeyboardMode.NONE)
         Gtk4LayerShell.set_exclusive_zone(self, -1)
 
@@ -50,6 +51,8 @@ class OverlayWindow(Gtk.ApplicationWindow):
         self.cursor_widget.set_focusable(False)
         self.cursor_widget.set_can_shrink(False)
         self.fixed.put(self.cursor_widget, 200, 200)
+
+        self.ai_target = None  # (x, y) when AI is directing, None when following mouse
 
         # 5. Thought Bubble Label
         self.bubble = Gtk.Label(label="")

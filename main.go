@@ -3,8 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
+	"net/http"
+	"os/exec"
+	"strings"
+
+	"github.com/cypher012/klikk/ai"
+	"github.com/joho/godotenv"
 )
 
 type Message struct {
@@ -23,29 +28,33 @@ func sendMessage(conn net.Conn, msg Message) error {
 	return err
 }
 
+var SOCKET_PATH = "/tmp/aicursor.sock"
+
 func main() {
-	conn, err := connectSocket()
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error connecting: ", err)
-	}
-	defer conn.Close()
-
-	// Send bubble message
-	err = sendMessage(conn, Message{Type: "bubble", Text: "Hello from Go!"})
-	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Error loading .env file:", err)
 	}
 
-	// Send move message
-	sendMessage(conn, Message{Type: "move", X: 500, Y: 300})
+	port := ":9999"
+	fmt.Printf("🚀 Klikk Dev Server started! Listening on http://localhost%s\n", port)
 
-	fmt.Println("message sent!")
+	aiClient := ai.NewAnthropic()
+	h := NewHandler(aiClient)
+
+	http.HandleFunc("/trigger", h.Trigger)
+
+	if err := http.ListenAndServe(port, nil); err != nil {
+		fmt.Println("Error starting server:", err)
+	}
 }
 
-func connectSocket() (net.Conn, error) {
-	conn, err := net.Dial("unix", "/tmp/aicursor.sock")
+func getUserInput() (string, error) {
+	out, err := exec.Command(
+		"zenity", "--entry", "--title=Klikk", "--text=What do you want to do",
+	).Output()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return conn, nil
+	return strings.TrimSpace(string(out)), nil
 }

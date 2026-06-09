@@ -6,6 +6,7 @@ This code runs in a separate background thread.
 import json
 import os
 import socket
+import threading
 
 import config
 from gi.repository import GLib
@@ -38,9 +39,17 @@ def listen_for_commands(window):
                         payload = json.loads(line)
                         command_type = payload.get("type")
                         if command_type == "move":
-                            GLib.idle_add(
-                                window.move_cursor, payload["x"], payload["y"]
-                            )
+                            window.ai_target = (payload["x"], payload["y"])
+
+                            def release():
+                                window.ai_target = None
+
+                            t = threading.Timer(4.0, release)
+                            t.daemon = True
+                            t.start()
+                            # GLib.idle_add(
+                            #     window.move_cursor, payload["x"], payload["y"]
+                            # )
                         elif command_type == "bubble":
                             GLib.idle_add(window.show_bubble, payload["text"])
                         elif command_type == "hide_bubble":
